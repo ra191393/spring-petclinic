@@ -9,31 +9,41 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-
 stages:
-    - stage: Build
-      displayName: Build stage
-      jobs:  
+  - stage: Build
+    displayName: Build stage
+    jobs:
       - job: Build
         displayName: Build Maven Project
         steps:
-        - task: Maven@4
-          displayName: 'Maven Package'
-          inputs:
-            mavenPomFile: 'pom.xml'
-            mavenOptions: '-Xmx3072m'
-            javaHomeOption: 'JDKVersion'
-            jdkVersionOption: '1.11'
-            jdkArchitectureOption: 'x64'
-            publishJUnitResults: true
-            testResultsFiles: '**/surefire-reports/TEST-*.xml'
-            goals: 'package'
+          # Instalar Java 17
+          - task: JavaToolInstaller@1
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+          
+          # Ejecutar Maven con la configuración actualizada
+          - task: Maven@4
+            displayName: 'Maven Package'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '17'  # Cambiar a Java 17
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              goals: 'package'
 
-        - task: CopyFiles@2
-          displayName: 'Copy Files to artifact staging directory'
-          inputs:
-            SourceFolder: '$(System.DefaultWorkingDirectory)'
-            Contents: '**/target/*.?(war|jar)'
-            TargetFolder: $(Build.ArtifactStagingDirectory)
-        - upload: $(Build.ArtifactStagingDirectory)
-          artifact: drop
+          # Copiar archivos a la carpeta de staging de artefactos
+          - task: CopyFiles@2
+            displayName: 'Copy Files to artifact staging directory'
+            inputs:
+              SourceFolder: '$(System.DefaultWorkingDirectory)'
+              Contents: '**/target/*.?(war|jar)'
+              TargetFolder: $(Build.ArtifactStagingDirectory)
+
+          # Subir artefactos a la carpeta de artefactos
+          - upload: $(Build.ArtifactStagingDirectory)
+            artifact: drop
